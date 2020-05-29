@@ -1,15 +1,19 @@
 require("dotenv").config();
-console.log("DAO_RPG_TOKEN", process.env.DAO_RPG_TOKEN);
-const { Game } = require("./game");
+// console.log("DAO_RPG_TOKEN", process.env.TOKEN);
+const { Game } = require("./rpg/game");
+const { Player } = require('./player');
+const { Room, rooms } = require("./room");
 const TelegramBot = require("node-telegram-bot-api");
 
+const BOT_NAME = "MetaStage";
+
 // replace the value below with the Telegram token you receive from @BotFather
-const token = process.env.DAO_RPG_TOKEN;
+const token = process.env.TOKEN;
 
 // Create a bot that uses 'polling' to fetch new updates
 const bot = new TelegramBot(token, { polling: true });
 
-console.log("starting engine");
+console.log("starting chat engine");
 // Matches "/echo [whatever]"
 
 bot.onText(/\/echo (.+)/, (msg, match) => {
@@ -27,7 +31,7 @@ bot.onText(/\/echo (.+)/, (msg, match) => {
 
 bot.onText(/\/end/, (msg, match) => {
   const chatId = msg.chat.id;
-  if (!rooms[chatId] || !rooms[chatId].game) {
+  if (!rooms.hasGame(msg.chat)) {
     return;
   }
 
@@ -36,22 +40,6 @@ bot.onText(/\/end/, (msg, match) => {
   rooms[chatId] = Room(); // clear out room
 
   send(chatId, "game ended");
-});
-
-bot.onText(/\/start (.+)/, (msg, match) => {
-  console.log(msg.from.username);
-  // 'msg' is the received Message from Telegram
-  // 'match' is the result of executing the regexp above on the text content
-  // of the message
-  const chatId = msg.chat.id;
-  if (rooms[chatId]) {
-  }
-
-  const resp =
-    "Welcome raid party! Who's going to join this raid? Say: /join or just join."; // the captured "whatever"
-
-  // send back the matched "whatever" to the chat
-  bot.sendMessage(chatId, resp);
 });
 
 // Join the party
@@ -101,22 +89,6 @@ bot.onText(/\/leave/, (msg, match) => {
     `${msg.from.username} left the party.`
   );
 });
-
-function Room() {
-  return {
-    players: {},
-    game: null,
-  };
-}
-function Player(name) {
-  return {
-    hp: 8,
-    hpMax: 8,
-    dm: 3,
-    name: name,
-  };
-}
-let rooms = {};
 
 const send = (chatId, msg) => {
   if (!msg) return;
@@ -279,11 +251,18 @@ bot.onText(/\/test/, (msg, match) => {
 });
 
 bot.onText(/\/start/, (msg, match) => {
-  const chatId = msg.chat.id;
+		const chatId = msg.chat.id;
+		rooms.add(msg.chat);
+		
+
+		rooms.forEach( x=> console.log(x.id, x.getLink() ) );
+		
+		const resp =
+				`Welcome to ${BOT_NAME}! Who's going to join this raid? Say: /join or just join.`;
 
   bot.sendMessage(
     chatId,
-    `Welcome to DAO RPG! Type /join to form a new party.`
+    resp
   );
 });
 
@@ -292,6 +271,6 @@ bot.onText(/\/help/, (msg, match) => {
 
   bot.sendMessage(
     chatId,
-    `Basic commands:\nAttack: /attack\nheal: /heal PLAYER_NAME`
+    `Basic commands:\n /start`
   );
 });

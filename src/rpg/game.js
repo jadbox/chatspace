@@ -334,7 +334,7 @@ class Game {
   }
 }
 
-module.exports = { Game: Game };
+module.exports = { Game };
 
 function rint(max, min) {
   min = min || 0;
