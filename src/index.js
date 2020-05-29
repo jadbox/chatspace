@@ -69,26 +69,7 @@ bot.onText(/\/join/, (msg, match) => {
   );
 });
 
-// Leave the party
-bot.onText(/\/leave/, (msg, match) => {
-  const chatId = msg.chat.id;
-  const user = msg.from.username;
 
-  const room = (rooms[chatId] = rooms[chatId] || Room());
-  rooms[chatId] = room;
-
-  if (room.game) {
-    bot.sendMessage(chatId, "sorry, game has already started");
-    return;
-  }
-
-  delete room.players[user];
-
-  bot.sendMessage(
-    chatId,
-    `${msg.from.username} left the party.`
-  );
-});
 
 const send = (chatId, msg) => {
   if (!msg) return;
@@ -157,8 +138,8 @@ bot.onText(/\/(stop|pause)/i, (msg, match) => {
   room.game.pause();
   send(chatId, `Game is stopped. /play to resume or /end to end quest.`);
 });
-
-bot.onText(/\/(play)/i, (msg, match) => {
+/*
+bot.onText(/\/(play)$/i, (msg, match) => {
   const chatId = msg.chat.id;
   const user = msg.from.username;
 
@@ -195,7 +176,7 @@ bot.onText(/\/(play)/i, (msg, match) => {
 
   game.start(_sendMsg, _sendPoll, onGameEnded, _sendSticked);
   bot.sendMessage(chatId, `Game is starting- good luck! /stop to stop.`);
-});
+}); */
 
 bot.onText(/[\/]?(attack|kill|swing|⚔️|🤺|🏹|🗡|🔫|⛓|🔪|🧨)/i, (msg, match) => {
   const chatId = msg.chat.id;
@@ -233,6 +214,8 @@ bot.onText(/[\/]?(aid|heal|1up|🍿|🛡|💊|🥪) (.*)/i, (msg, match) => {
 // Listen for any kind of message. There are different kinds of
 // messages.
 bot.on("message", (msg, match) => {
+		if(msg.from && msg.chat) rooms.addPlayer(msg.chat, new Player(msg.from.username, msg.from));
+		return;
   const chatId = msg.chat.id;
 
   if (!match?.type) return;
@@ -250,20 +233,70 @@ bot.onText(/\/test/, (msg, match) => {
   );
 });
 
+// ===========
+
+// Add user to room
+
+
+// Leave the party
+bot.onText(/\/leave/, (msg, match) => {
+	const chatId = msg.chat.id;
+	
+	rooms.remove(msg.chat);
+
+	bot.sendMessage(
+			chatId,
+			`${msg.from.username} removed room. Type /start to add.`
+	);
+});
+
 bot.onText(/\/start/, (msg, match) => {
 		const chatId = msg.chat.id;
+		// console.log(msg.chat);
 		rooms.add(msg.chat);
 		
+		// console.log(msg.chat);
 
-		rooms.forEach( x=> console.log(x.id, x.getLink() ) );
+		const rs = rooms.filter(x=>!x.private).map( x => `${x.name}: ${x.getLink()}`).join('\n');
 		
 		const resp =
-				`Welcome to ${BOT_NAME}! Who's going to join this raid? Say: /join or just join.`;
+				`Welcome to ${BOT_NAME}! Click on a MetaStage room below to join:\n\n${rs}`;
 
   bot.sendMessage(
     chatId,
-    resp
+				resp,
+				{attachments: []}
   );
+});
+
+bot.onText(/\/players/, (msg, match) => {
+	const chatId = msg.chat.id;
+
+	const rs = rooms.getPlayers(msg.chat, msg.chat).map(x=>x.name).join('\n');
+	
+	const resp =
+			`Room players:\n\n${rs}`;
+
+	bot.sendMessage(
+			chatId,
+			resp,
+			{attachments: []}
+	);
+});
+
+bot.onText(/\/rooms/, (msg, match) => {
+	const chatId = msg.chat.id;
+
+	const rs = rooms.filter(x=>!x.private).map( x => `${x.name}: ${x.getLink()}`).join('\n');
+	
+	const resp =
+			`Click on a MetaStage room below to join:\n\n${rs}`;
+
+	bot.sendMessage(
+			chatId,
+			resp,
+			{attachments: []}
+	);
 });
 
 bot.onText(/\/help/, (msg, match) => {
