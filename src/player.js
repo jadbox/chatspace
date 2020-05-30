@@ -1,12 +1,13 @@
-function Player(name, from, pic) {
+function Player(from, pic) {
     return {
       pic,
       hp: 8,
       hpMax: 8,
       dm: 3,
-      name: name,
+      name: from.username,
+      id: from.username,
       from: from,
-      id: name
+      room: null
     };
   }
   

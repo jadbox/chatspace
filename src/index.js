@@ -2,6 +2,7 @@ require("dotenv").config();
 // console.log("DAO_RPG_TOKEN", process.env.TOKEN);
 const { Game } = require("./rpg/game");
 const { Player } = require('./player');
+// const { Stage } = require('./stagebot');
 const { Room, rooms } = require("./room");
 const TelegramBot = require("node-telegram-bot-api");
 
@@ -16,61 +17,7 @@ const bot = new TelegramBot(token, { polling: true });
 console.log("starting chat engine");
 // Matches "/echo [whatever]"
 
-bot.onText(/\/echo (.+)/, (msg, match) => {
-  console.log(msg.from.username);
-  // 'msg' is the received Message from Telegram
-  // 'match' is the result of executing the regexp above on the text content
-  // of the message
-
-  const chatId = msg.chat.id;
-  const resp = match[1]; // the captured "whatever"
-
-  // send back the matched "whatever" to the chat
-  bot.sendMessage(chatId, resp);
-});
-
-bot.onText(/\/end/, (msg, match) => {
-  const chatId = msg.chat.id;
-  if (!rooms.hasGame(msg.chat)) {
-    return;
-  }
-
-  rooms[chatId].game.quit();
-
-  rooms[chatId] = Room(); // clear out room
-
-  send(chatId, "game ended");
-});
-
-// Join the party
-bot.onText(/\/join/, (msg, match) => {
-  const chatId = msg.chat.id;
-  const user = msg.from.username;
-  if (!user || user === "undefined") {
-    bot.sendMessage(
-      chatId,
-      `Please set up a Telegram username first in your Telegram settings.`
-    );
-    return;
-  }
-  const room = (rooms[chatId] = rooms[chatId] || Room());
-  rooms[chatId] = room;
-
-  if (room.game) {
-    bot.sendMessage(chatId, "sorry, game has already started");
-    return;
-  }
-
-  room.players[user] = Player(user);
-
-  bot.sendMessage(
-    chatId,
-    `${msg.from.username} thanks for joining. Type /play ONLY once everyone has joined.`
-  );
-});
-
-
-
+// utils
 const send = (chatId, msg) => {
   if (!msg) return;
 
@@ -126,6 +73,62 @@ const sendPoll = async (chatId, question, pollOptions, options) => {
   // bot.on('message', console.log.bind(console));
 };
 
+// Commands
+
+bot.onText(/\/echo (.+)/, (msg, match) => {
+  console.log(msg.from.username);
+  // 'msg' is the received Message from Telegram
+  // 'match' is the result of executing the regexp above on the text content
+  // of the message
+
+  const chatId = msg.chat.id;
+  const resp = match[1]; // the captured "whatever"
+
+  // send back the matched "whatever" to the chat
+  bot.sendMessage(chatId, resp);
+});
+
+/*
+bot.onText(/\/end/, (msg, match) => {
+  const chatId = msg.chat.id;
+  if (!rooms.hasGame(msg.chat)) {
+    return;
+  }
+
+  rooms[chatId].game.quit();
+
+  rooms[chatId] = Room(); // clear out room
+
+  send(chatId, "game ended");
+});
+
+// Join the party
+bot.onText(/\/join/, (msg, match) => {
+  const chatId = msg.chat.id;
+  const user = msg.from.username;
+  if (!user || user === "undefined") {
+    bot.sendMessage(
+      chatId,
+      `Please set up a Telegram username first in your Telegram settings.`
+    );
+    return;
+  }
+  const room = (rooms[chatId] = rooms[chatId] || Room());
+  rooms[chatId] = room;
+
+  if (room.game) {
+    bot.sendMessage(chatId, "sorry, game has already started");
+    return;
+  }
+
+  room.players[user] = Player(user);
+
+  bot.sendMessage(
+    chatId,
+    `${msg.from.username} thanks for joining. Type /play ONLY once everyone has joined.`
+  );
+});
+
 bot.onText(/\/(stop|pause)/i, (msg, match) => {
   const chatId = msg.chat.id;
 
@@ -138,6 +141,7 @@ bot.onText(/\/(stop|pause)/i, (msg, match) => {
   room.game.pause();
   send(chatId, `Game is stopped. /play to resume or /end to end quest.`);
 });
+*/
 /*
 bot.onText(/\/(play)$/i, (msg, match) => {
   const chatId = msg.chat.id;
@@ -176,7 +180,7 @@ bot.onText(/\/(play)$/i, (msg, match) => {
 
   game.start(_sendMsg, _sendPoll, onGameEnded, _sendSticked);
   bot.sendMessage(chatId, `Game is starting- good luck! /stop to stop.`);
-}); */
+}); 
 
 bot.onText(/[\/]?(attack|kill|swing|⚔️|🤺|🏹|🗡|🔫|⛓|🔪|🧨)/i, (msg, match) => {
   const chatId = msg.chat.id;
@@ -210,11 +214,13 @@ bot.onText(/[\/]?(aid|heal|1up|🍿|🛡|💊|🥪) (.*)/i, (msg, match) => {
   const params = match[2].replace("@", "");
   room.game.act(user, "aid", params);
 });
+*/
 
 // Listen for any kind of message. There are different kinds of
 // messages.
 bot.on("message", (msg, match) => {
-		if(msg.from && msg.chat) rooms.addPlayer(msg.chat, new Player(msg.from.username, msg.from));
+		// Register user to room
+		if(msg.from && msg.chat) rooms.setPlayer(msg.chat, msg.from);
 		return;
   const chatId = msg.chat.id;
 
@@ -238,7 +244,7 @@ bot.onText(/\/test/, (msg, match) => {
 // Add user to room
 
 
-// Leave the party
+// Leave?
 bot.onText(/\/leave/, (msg, match) => {
 	const chatId = msg.chat.id;
 	
