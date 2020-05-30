@@ -1,7 +1,6 @@
 require("dotenv").config();
 // console.log("DAO_RPG_TOKEN", process.env.TOKEN);
 const { Game } = require("./rpg/game");
-const { Player } = require('./player');
 // const { Stage } = require('./stagebot');
 const { Room, rooms } = require("./room");
 const TelegramBot = require("node-telegram-bot-api");
@@ -13,6 +12,8 @@ const token = process.env.TOKEN;
 
 // Create a bot that uses 'polling' to fetch new updates
 const bot = new TelegramBot(token, { polling: true });
+
+bot.on("polling_error", console.log);
 
 console.log("starting chat engine");
 // Matches "/echo [whatever]"
@@ -239,13 +240,91 @@ bot.onText(/\/test/, (msg, match) => {
   );
 });
 
+function isPrivate(msg) {
+	return msg.chat.type === 'private';
+}
+
+function onlyGroup(msg) {
+	if(msg.chat.type!=='private') return true;
+
+	const chatId = msg.chat.id;
+	bot.sendMessage(
+		chatId,
+		`Can only run this command from a public group.`
+	);
+}
+
+function onlyStage(msg) {
+	if(msg.chat.type==='private') return true;
+
+	const chatId = msg.chat.id;
+	bot.sendMessage(
+		chatId,
+		`Can only run this command from direct MetaStage chat.`
+	);
+}
+
 // ===========
+
+function introRoomMessage(msg, myroomId, justLooking) {
+
+	// console.log('join', myroomId, roomcontext);
+
+	const room = rooms.getPlayerRoom(myroomId);
+	const rs = rooms.getPlayers(room).map(x=>x.name).join(', ');
+
+	let roomName = room.title;
+	if(roomName===msg.from.username) roomName = 'home';
+	
+	const resp =
+			`People here: ${rs}`;
+
+	let introMsg = `You've entered`;
+	if(justLooking) introMsg = `Current room`;
+
+	bot.sendMessage(
+		myroomId,
+		`${introMsg}: ${roomName}.\n${resp}`
+	);
+
+}
+
+bot.onText(/^\/look/, (msg, match) => {
+	if(!onlyStage(msg)) return;
+	rooms.add(msg.chat);
+
+	introRoomMessage(msg, msg.from.id, true);
+});
+
+bot.onText(/^\/join/, (msg, match) => {
+	if(!onlyGroup(msg)) return;
+	rooms.add(msg.chat);
+
+	const chatId = msg.chat.id;
+	console.log(msg);
+	// create
+	rooms.add(msg.chat);
+	// ensure user room is init
+	const roomcontext = msg.chat;
+	
+	const userid = msg.from.id; // get the user id to send a message direct
+	rooms.add({id:userid});
+
+	rooms.setPlayer(roomcontext, msg.from);
+
+	introRoomMessage(msg, userid);
+	
+	try {
+		bot.deleteMessage(chatId, msg.message_id);
+	} catch(e) {
+
+	}
+});
 
 // Add user to room
 
-
 // Leave?
-bot.onText(/\/leave/, (msg, match) => {
+bot.onText(/^\/leave/, (msg, match) => {
 	const chatId = msg.chat.id;
 	
 	rooms.remove(msg.chat);
@@ -256,7 +335,7 @@ bot.onText(/\/leave/, (msg, match) => {
 	);
 });
 
-bot.onText(/\/start/, (msg, match) => {
+bot.onText(/^\/start/, (msg, match) => {
 		const chatId = msg.chat.id;
 		// console.log(msg.chat);
 		rooms.add(msg.chat);
@@ -275,7 +354,7 @@ bot.onText(/\/start/, (msg, match) => {
   );
 });
 
-bot.onText(/\/players/, (msg, match) => {
+bot.onText(/^\/players/, (msg, match) => {
 	const chatId = msg.chat.id;
 
 	const rs = rooms.getPlayers(msg.chat, msg.chat).map(x=>x.name).join('\n');
@@ -290,7 +369,7 @@ bot.onText(/\/players/, (msg, match) => {
 	);
 });
 
-bot.onText(/\/rooms/, (msg, match) => {
+bot.onText(/^\/rooms/, (msg, match) => {
 	const chatId = msg.chat.id;
 
 	const rs = rooms.filter(x=>!x.private).map( x => `${x.name}: ${x.getLink()}`).join('\n');
@@ -305,7 +384,7 @@ bot.onText(/\/rooms/, (msg, match) => {
 	);
 });
 
-bot.onText(/\/help/, (msg, match) => {
+bot.onText(/^\/help/, (msg, match) => {
   const chatId = msg.chat.id;
 
   bot.sendMessage(
