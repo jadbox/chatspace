@@ -1,21 +1,28 @@
 const { Player } = require('./player');
 
+class RoomInfo {
+	constructor(info) {
+		this.players = {};
+		this.rooms = {};
+		this.welcomeMsg =  {};
+		this.game = null;
+		this.info = info;
+		this.id = info.id;
+		this.title = info.title || info.username;
+		this.name = info.username;
+		this.private = info.type === 'private';
+	}
+	getLink() {
+		if (!this.info.username) return null;
+		return 'https://t.me/' + this.info.username;
+	}
+	numPlayers() {
+		return Object.keys(this.players).length;
+	}
+}
+
 function Room(info) {
-  return {
-    players: {},
-    rooms: {},
-    welcomeMsg: {},
-    game: null,
-    info: info,
-    id: info.id,
-    title: info.title || info.username,
-    name: info.username,
-    private: info.type === 'private',
-    getLink() {
-      if (!info.username) return null;
-      return 'https://t.me/' + info.username;
-    },
-  };
+  return new RoomInfo(info);
 }
 
 class Rooms {
@@ -65,7 +72,8 @@ class Rooms {
     else return [];
   }
   add(info) {
-    if (!info) throw new Error('no room info');
+	if (!info) throw new Error('no room info');
+	if (!info.id) throw new Error('no room id info');
     if (this.list[info.id]) return;
 
     this.list[info.id] = Room(info);

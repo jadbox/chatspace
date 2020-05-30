@@ -267,7 +267,7 @@ bot.onText(/^[^\/]/, (msg, match) => {
   const room = rooms.getPlayerRoom(msg.from.id);
   const rs = rooms.getPlayers(room);
   rs.forEach((player) => {
-    if(player.id !== msg.from.id) bot.sendMessage(player.id, `${msg.from.username}: ${msg.text}`);
+    if (player.id !== msg.from.id) bot.sendMessage(player.id, `${msg.from.username}: ${msg.text}`);
   });
 });
 
@@ -315,21 +315,36 @@ bot.onText(/^\/look/, (msg, match) => {
   introRoomMessage(msg, msg.from.id, true);
 });
 
-bot.onText(/^\/join/, (msg, match) => {
+bot.onText(/^\/join(_.*)*/, async (msg, match) => {
   if (!onlyGroup(msg)) return;
-  rooms.add(msg.chat);
+		rooms.add(msg.chat);
+		// ---
+		// console.log(match);
+		let targetRoom = msg.chat;
+		if(match[1]) {
+			const r = match[1].replace('@MetaStageBot', '');
+			targetRoom = {id: r.slice(1) };
+			// console.log('targerRoom', targerRoom)
+			try {
+				targetRoom = await bot.getChat('@'+targetRoom.id);
+			} catch(e) {}
+
+			if(!targetRoom) {
+				console.log('no such room:' + targetRoom);
+				return;
+			}
+			console.log('targerRoom', targetRoom)
+		}
 
   const chatId = msg.chat.id;
   // console.log(msg);
   // create
-  rooms.add(msg.chat);
-  // ensure user room is init
-  const roomcontext = msg.chat;
+  rooms.add(targetRoom);
 
   const userid = msg.from.id; // get the user id to send a message direct
   rooms.add({ id: userid });
 
-  rooms.setPlayer(roomcontext, msg.from);
+  rooms.setPlayer(targetRoom, msg.from);
 
   introRoomMessage(msg, userid);
 
@@ -350,17 +365,24 @@ bot.onText(/^\/(leave|home)/, (msg, match) => {
   introRoomMessage(msg, msg.from.id, true);
 });
 
+function roomMessageStr(msg) {
+	return rooms
+		.filter((x) => !x.private)
+		.map((x) => `/join_${x.name} [peeps=${x.numPlayers()}]		${x.getLink()}`)
+		.join('\n');
+}
+
 bot.onText(/^\/start/, (msg, match) => {
   const chatId = msg.chat.id;
   // console.log(msg.chat);
   rooms.add(msg.chat);
+  rooms.add(msg.from);
+
+  rooms.setPlayer(msg.chat.type === 'private' ? msg.from : msg.chat, msg.from, true);
 
   // console.log(msg.chat);
 
-  const rs = rooms
-    .filter((x) => !x.private)
-    .map((x) => `${x.name}: ${x.getLink()}`)
-    .join('\n');
+		const rs = roomMessageStr(msg);
 
   const resp = `Welcome to ${BOT_NAME}! Click on a MetaStage room below to join:\n\n${rs}`;
 
@@ -383,20 +405,21 @@ bot.onText(/^\/players/, (msg, match) => {
 bot.onText(/^\/rooms/, (msg, match) => {
   const chatId = msg.chat.id;
 
-  const rs = rooms
-    .filter((x) => !x.private)
-    .map((x) => `${x.name}: ${x.getLink()}`)
-    .join('\n');
+  const rs = roomMessageStr(msg);
 
   const resp = `Click on a MetaStage room below to join:\n\n${rs}`;
 
-  bot.sendMessage(chatId, resp, { attachments: [] });
+		bot.sendMessage(chatId, resp, { attachments: [] });
+		
+		if(!isPrivate(msg)) {
+			bot.deleteMessage(msg.chat.id, msg.message_id);
+		}
 });
 
 bot.onText(/^\/help/, (msg, match) => {
-		const chatId = msg.chat.id;
-		
-		const info = `To create subrooms in channels, pin a message to the group that contains the list in format of:
+  const chatId = msg.chat.id;
+
+  const info = `To create subrooms in channels, pin a message to the group that contains the list in format of:
 
 		ROOMNAME MAX_USERS(number) MIXER(bool)
 		/join_Daohouse 5 no
@@ -406,8 +429,10 @@ bot.onText(/^\/help/, (msg, match) => {
 
   bot.sendMessage(
     chatId,
-				`Basic commands:
-					/start, /help
+    `Basic commands:
+					/start
+					/help
+					/rooms view all rooms
 
 					Group commands:
 					/join - Set the current bot context to this room (bot must be installed in channel)
@@ -415,7 +440,7 @@ bot.onText(/^\/help/, (msg, match) => {
 					Stage commands:
 					/look - See the current room context
 					/people  - See the current people here
-				/leave - Leave the current room and return to home.
+					/leave - Leave the current room and return to home.
 				
 				${info}`
   );
