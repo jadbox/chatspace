@@ -259,21 +259,24 @@ function onlyStage(msg) {
 }
 
 // ===========
+function sendToRoom(msg, text, showMe) {
+	rooms.add(msg.chat);
+
+	// console.log(msg);
+
+	const room = rooms.getPlayerRoom(msg.from.id);
+	const rs = rooms.getPlayers(room);
+	rs.forEach((player) => {
+			if (player.id !== msg.from.id || !!showMe) bot.sendMessage(player.id, `${text}`);
+	});
+}
 
 bot.onText(/^[^\/]/, (msg, match) => {
   // console.log('msg.chat.type', msg.chat)
   if (msg.chat.type !== 'private') return;
   // if(msg.from && msg.chat) rooms.setPlayer(msg.chat, msg.from);
 
-  rooms.add(msg.chat);
-
-  // console.log(msg);
-
-  const room = rooms.getPlayerRoom(msg.from.id);
-  const rs = rooms.getPlayers(room);
-  rs.forEach((player) => {
-    if (player.id !== msg.from.id) bot.sendMessage(player.id, `${msg.from.username}: ${msg.text}`);
-  });
+  sendToRoom(msg, `${msg.from.username}: ${msg.text}`);
 });
 
 async function introRoomMessage(msg, myroomId, justLooking) {
@@ -410,6 +413,18 @@ function roomMessageStr(msg) {
     .join('\n');
 }
 
+bot.onText(/^\/wave/, (msg, match) => {
+	if (!onlyStage(msg)) return;
+
+	sendToRoom(msg, `${msg.from.username} waves 👋`, true);
+});
+
+bot.onText(/^\/dance/, (msg, match) => {
+	if (!onlyStage(msg)) return;
+	
+	sendToRoom(msg, `🎶🎶 ${msg.from.username} starts dancing 🎶🎶`, true);
+});
+
 bot.onText(/^\/start/, (msg, match) => {
   const chatId = msg.chat.id;
   // console.log(msg.chat);
@@ -457,7 +472,8 @@ bot.onText(/^\/rooms/, (msg, match) => {
 bot.onText(/^\/help/, (msg, match) => {
   const chatId = msg.chat.id;
 
-  const info = `To create subrooms in channels, pin a message to the group that contains the list in format of:
+		const info = `
+		To create subrooms in channels, pin a message to the group that contains the list in format of:
 
 		ROOMNAME MAX_USERS(number) MIXER(bool)
 		/join_Daohouse 5 no
@@ -479,7 +495,9 @@ bot.onText(/^\/help/, (msg, match) => {
 					/look - See the current room context
 					/people  - See the current people here
 					/leave - Leave the current room and return to home.
-				
-				${info}`
+					/dance, /wave - expressions
+					/take NAME - WIP, not available yet
+					/attack NAME - WIP, not available yet
+				` // ${info}
   );
 });
