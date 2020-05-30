@@ -12,7 +12,7 @@ function Room(info) {
     name: info.username,
     private: info.type === 'private',
     getLink() {
-      if (!info.username) return 'room may not be public';
+      if (!info.username) return null;
       return 'https://t.me/' + info.username;
     },
   };
@@ -23,7 +23,7 @@ class Rooms {
     this.list = {};
     this.players = {};
   }
-  setPlayer(info, playerObj) {
+  setPlayer(info, playerObj, forcePrivate) {
     const id = playerObj.id; //username;
 
     let player = this.players[id];
@@ -40,7 +40,7 @@ class Rooms {
 	// does the current room exist?
 	this.add(info);
 	// if not private or room has not been set yet
-	 if (info.type!=='private' || !this.getPlayer(playerObj.id).room) {
+	 if (info.type!=='private' || !this.getPlayer(playerObj.id).room || forcePrivate) {
       // const playerInRoom = this.players[id]; // this.get(info).players[player.id];
 
       // add player to room;
@@ -48,7 +48,7 @@ class Rooms {
       // set player with room
       player.room = info.id;
 
-	  console.log('Setting player room', player);
+	  // console.log('Setting player room', player);
 	 }
   }
   getPlayer(id) {

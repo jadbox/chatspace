@@ -266,6 +266,26 @@ function onlyStage(msg) {
 
 // ===========
 
+bot.onText(/^asd/, (msg, match) => {
+	// console.log('msg.chat.type', msg.chat)
+	if(msg.chat.type!=='private') return;
+	// if(msg.from && msg.chat) rooms.setPlayer(msg.chat, msg.from);
+
+	rooms.add(msg.chat);
+
+	console.log(msg);
+
+	const room = rooms.getPlayerRoom(msg.from.id);
+	const rs = rooms.getPlayers(room);
+	rs.forEach(player => {
+		bot.sendMessage(
+			player.id,
+			`${msg.from.username}: ${msg.text}`
+			)
+	})
+
+});
+
 async function introRoomMessage(msg, myroomId, justLooking) {
 
 	// console.log('join', myroomId, roomcontext);
@@ -281,7 +301,7 @@ async function introRoomMessage(msg, myroomId, justLooking) {
 		roomName = 'home';
 		isHome = true;
 	} else {
-		linkText = ` ${room.getLink()}`;
+		if(room.getLink()) linkText = ` ${room.getLink()}`;
 	}
 	
 	const peopleMsg =
@@ -301,7 +321,7 @@ async function introRoomMessage(msg, myroomId, justLooking) {
 
 	bot.sendMessage(
 		myroomId,
-		`${introMsg}: ${roomName}${linkText}.\n${peopleMsg}${pinnedMessage}`,
+		`${introMsg}: ${roomName}${linkText}\n${peopleMsg}${pinnedMessage}`,
 		{attachments: []}
 	);
 }
@@ -341,15 +361,15 @@ bot.onText(/^\/join/, (msg, match) => {
 // Add user to room
 
 // Leave?
-bot.onText(/^\/leave/, (msg, match) => {
+bot.onText(/^\/(leave|home)/, (msg, match) => {
+	if(!onlyStage(msg)) return;
+
 	const chatId = msg.chat.id;
 	
-	rooms.remove(msg.chat);
+	// rooms.remove(msg.chat);
+	rooms.setPlayer(msg.from, msg.from, true);
 
-	bot.sendMessage(
-			chatId,
-			`${msg.from.username} removed room. Type /start to add.`
-	);
+	introRoomMessage(msg, msg.from.id, true);
 });
 
 bot.onText(/^\/start/, (msg, match) => {
