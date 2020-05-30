@@ -1,11 +1,11 @@
-require("dotenv").config();
+require('dotenv').config();
 // console.log("DAO_RPG_TOKEN", process.env.TOKEN);
-const { Game } = require("./rpg/game");
+const { Game } = require('./rpg/game');
 // const { Stage } = require('./stagebot');
-const { Room, rooms } = require("./room");
-const TelegramBot = require("node-telegram-bot-api");
+const { Room, rooms } = require('./room');
+const TelegramBot = require('node-telegram-bot-api');
 
-const BOT_NAME = "MetaStage";
+const BOT_NAME = 'MetaStage';
 
 // replace the value below with the Telegram token you receive from @BotFather
 const token = process.env.TOKEN;
@@ -13,9 +13,9 @@ const token = process.env.TOKEN;
 // Create a bot that uses 'polling' to fetch new updates
 const bot = new TelegramBot(token, { polling: true });
 
-bot.on("polling_error", console.log);
+bot.on('polling_error', console.log);
 
-console.log("starting chat engine");
+console.log('starting chat engine');
 // Matches "/echo [whatever]"
 
 // utils
@@ -50,12 +50,10 @@ const sendPoll = async (chatId, question, pollOptions, options) => {
       });
       const winner = lastPoll.length > 0 ? lastPoll[0].text : pollOptions[0];
       let voter_count = lastPoll.length > 0 ? lastPoll[0].voter_count : 0;
-      const rmsg = `Proposal <${String(
-        winner
-      ).toUpperCase()}> won with ${voter_count} vote.`;
+      const rmsg = `Proposal <${String(winner).toUpperCase()}> won with ${voter_count} vote.`;
 
       // send(chatId, rmsg);
-      bot.removeListener("poll", onPoll);
+      bot.removeListener('poll', onPoll);
       res(winner);
     };
 
@@ -69,7 +67,7 @@ const sendPoll = async (chatId, question, pollOptions, options) => {
     };
 
     timeOut = setTimeout(onTimeOut, open_period * 1000);
-    bot.on("poll", onPoll);
+    bot.on('poll', onPoll);
   });
   // bot.on('message', console.log.bind(console));
 };
@@ -219,213 +217,208 @@ bot.onText(/[\/]?(aid|heal|1up|🍿|🛡|💊|🥪) (.*)/i, (msg, match) => {
 
 // Listen for any kind of message. There are different kinds of
 // messages.
-bot.on("message", (msg, match) => {
-		// Register user to room
-		if(msg.from && msg.chat) rooms.setPlayer(msg.chat, msg.from);
-		return;
+bot.on('message', (msg, match) => {
+  // Register user to room
+  if (msg.from && msg.chat) rooms.setPlayer(msg.chat, msg.from);
+  return;
   const chatId = msg.chat.id;
 
   if (!match?.type) return;
   if (!msg?.sticker?.file_id && !msg?.animation?.file_id) return;
-  console.log("match type", match?.type);
-  console.log("Sticker", msg?.sticker?.file_id);
-  console.log("Animation", msg?.animation?.file_id, msg?.animation);
+  console.log('match type', match?.type);
+  console.log('Sticker', msg?.sticker?.file_id);
+  console.log('Animation', msg?.animation?.file_id, msg?.animation);
 });
 
 bot.onText(/\/test/, (msg, match) => {
   const chatId = msg.chat.id;
-  bot.sendDocument(
-    chatId,
-    "CgACAgQAAxkBAAIGnF6kwDGFj_M0kZ-skV-Kuoe-L_xvAAJrAgACrEAsUZcOPnnrs47BGQQ"
-  );
+  bot.sendDocument(chatId, 'CgACAgQAAxkBAAIGnF6kwDGFj_M0kZ-skV-Kuoe-L_xvAAJrAgACrEAsUZcOPnnrs47BGQQ');
 });
 
 function isPrivate(msg) {
-	return msg.chat.type === 'private';
+  return msg.chat.type === 'private';
 }
 
 function onlyGroup(msg) {
-	if(msg.chat.type!=='private') return true;
+  if (msg.chat.type !== 'private') return true;
 
-	const chatId = msg.chat.id;
-	bot.sendMessage(
-		chatId,
-		`Can only run this command from a public group.`
-	);
+  const chatId = msg.chat.id;
+  bot.sendMessage(chatId, `Can only run this command from a public group.`);
 }
 
 function onlyStage(msg) {
-	if(msg.chat.type==='private') return true;
+  if (msg.chat.type === 'private') return true;
 
-	const chatId = msg.chat.id;
-	bot.sendMessage(
-		chatId,
-		`Can only run this command from direct MetaStage chat.`
-	);
+  const chatId = msg.chat.id;
+  bot.sendMessage(chatId, `Can only run this command from direct MetaStage chat.`);
 }
 
 // ===========
 
-bot.onText(/^asd/, (msg, match) => {
-	// console.log('msg.chat.type', msg.chat)
-	if(msg.chat.type!=='private') return;
-	// if(msg.from && msg.chat) rooms.setPlayer(msg.chat, msg.from);
+bot.onText(/^[^\/]/, (msg, match) => {
+  // console.log('msg.chat.type', msg.chat)
+  if (msg.chat.type !== 'private') return;
+  // if(msg.from && msg.chat) rooms.setPlayer(msg.chat, msg.from);
 
-	rooms.add(msg.chat);
+  rooms.add(msg.chat);
 
-	console.log(msg);
+  // console.log(msg);
 
-	const room = rooms.getPlayerRoom(msg.from.id);
-	const rs = rooms.getPlayers(room);
-	rs.forEach(player => {
-		bot.sendMessage(
-			player.id,
-			`${msg.from.username}: ${msg.text}`
-			)
-	})
-
+  const room = rooms.getPlayerRoom(msg.from.id);
+  const rs = rooms.getPlayers(room);
+  rs.forEach((player) => {
+    if(player.id !== msg.from.id) bot.sendMessage(player.id, `${msg.from.username}: ${msg.text}`);
+  });
 });
 
 async function introRoomMessage(msg, myroomId, justLooking) {
+  // console.log('join', myroomId, roomcontext);
 
-	// console.log('join', myroomId, roomcontext);
+  const room = rooms.getPlayerRoom(myroomId);
+  const rs = rooms
+    .getPlayers(room)
+    .map((x) => x.name)
+    .join(', ');
 
-	const room = rooms.getPlayerRoom(myroomId);
-	const rs = rooms.getPlayers(room).map(x=>x.name).join(', ');
+  let roomName = room.title;
 
-	let roomName = room.title;
+  let linkText = '';
+  let isHome = false;
+  if (roomName === msg.from.username) {
+    roomName = 'home';
+    isHome = true;
+  } else {
+    if (room.getLink()) linkText = ` ${room.getLink()}`;
+  }
 
-	let linkText = '';
-	let isHome = false;
-	if(roomName===msg.from.username) {
-		roomName = 'home';
-		isHome = true;
-	} else {
-		if(room.getLink()) linkText = ` ${room.getLink()}`;
-	}
-	
-	const peopleMsg =
-			`active people: ${rs}`;
+  const peopleMsg = `active people: ${rs}`;
 
-	let introMsg = `You've entered`;
-	if(justLooking) introMsg = `Current room`;
+  let introMsg = `You've entered`;
+  if (justLooking) introMsg = `Current room`;
 
-	//--
-	let pinnedMessage = '';
-	if(!isHome) {
-		const d = await bot.getChat(msg.chat.id);
-		// console.log('d.pinned_message', d.pinned_message)
-		if(d.pinned_message && d.pinned_message.text) pinnedMessage = `\n\n${d.pinned_message.text}`
-	}
-	// --
+  //--
+  let pinnedMessage = '';
+  if (!isHome) {
+    const d = await bot.getChat(msg.chat.id);
+    // console.log('d.pinned_message', d.pinned_message)
+    if (d.pinned_message && d.pinned_message.text) pinnedMessage = `\n\n${d.pinned_message.text}`;
+  }
+  // --
 
-	bot.sendMessage(
-		myroomId,
-		`${introMsg}: ${roomName}${linkText}\n${peopleMsg}${pinnedMessage}`,
-		{attachments: []}
-	);
+  bot.sendMessage(myroomId, `${introMsg}: ${roomName}${linkText}\n${peopleMsg}${pinnedMessage}`, { attachments: [] });
 }
 
 bot.onText(/^\/look/, (msg, match) => {
-	if(!onlyStage(msg)) return;
-	rooms.add(msg.chat);
+  if (!onlyStage(msg)) return;
+  rooms.add(msg.chat);
 
-	introRoomMessage(msg, msg.from.id, true);
+  introRoomMessage(msg, msg.from.id, true);
 });
 
 bot.onText(/^\/join/, (msg, match) => {
-	if(!onlyGroup(msg)) return;
-	rooms.add(msg.chat);
+  if (!onlyGroup(msg)) return;
+  rooms.add(msg.chat);
 
-	const chatId = msg.chat.id;
-	console.log(msg);
-	// create
-	rooms.add(msg.chat);
-	// ensure user room is init
-	const roomcontext = msg.chat;
-	
-	const userid = msg.from.id; // get the user id to send a message direct
-	rooms.add({id:userid});
+  const chatId = msg.chat.id;
+  console.log(msg);
+  // create
+  rooms.add(msg.chat);
+  // ensure user room is init
+  const roomcontext = msg.chat;
 
-	rooms.setPlayer(roomcontext, msg.from);
+  const userid = msg.from.id; // get the user id to send a message direct
+  rooms.add({ id: userid });
 
-	introRoomMessage(msg, userid);
-	
-	try {
-		bot.deleteMessage(chatId, msg.message_id);
-	} catch(e) {
+  rooms.setPlayer(roomcontext, msg.from);
 
-	}
+  introRoomMessage(msg, userid);
+
+  try {
+    bot.deleteMessage(chatId, msg.message_id);
+  } catch (e) {}
 });
 
 // Add user to room
 
 // Leave?
 bot.onText(/^\/(leave|home)/, (msg, match) => {
-	if(!onlyStage(msg)) return;
+  if (!onlyStage(msg)) return;
 
-	const chatId = msg.chat.id;
-	
-	// rooms.remove(msg.chat);
-	rooms.setPlayer(msg.from, msg.from, true);
+  const chatId = msg.chat.id;
 
-	introRoomMessage(msg, msg.from.id, true);
+  // rooms.remove(msg.chat);
+  rooms.setPlayer(msg.from, msg.from, true);
+
+  introRoomMessage(msg, msg.from.id, true);
 });
 
 bot.onText(/^\/start/, (msg, match) => {
-		const chatId = msg.chat.id;
-		// console.log(msg.chat);
-		rooms.add(msg.chat);
-		
-		// console.log(msg.chat);
+  const chatId = msg.chat.id;
+  // console.log(msg.chat);
+  rooms.add(msg.chat);
 
-		const rs = rooms.filter(x=>!x.private).map( x => `${x.name}: ${x.getLink()}`).join('\n');
-		
-		const resp =
-				`Welcome to ${BOT_NAME}! Click on a MetaStage room below to join:\n\n${rs}`;
+  // console.log(msg.chat);
 
-  bot.sendMessage(
-    chatId,
-				resp,
-				{attachments: []}
-  );
+  const rs = rooms
+    .filter((x) => !x.private)
+    .map((x) => `${x.name}: ${x.getLink()}`)
+    .join('\n');
+
+  const resp = `Welcome to ${BOT_NAME}! Click on a MetaStage room below to join:\n\n${rs}`;
+
+  bot.sendMessage(chatId, resp, { attachments: [] });
 });
 
 bot.onText(/^\/players/, (msg, match) => {
-	const chatId = msg.chat.id;
+  const chatId = msg.chat.id;
 
-	const rs = rooms.getPlayers(msg.chat, msg.chat).map(x=>x.name).join('\n');
-	
-	const resp =
-			`Room players:\n\n${rs}`;
+  const rs = rooms
+    .getPlayers(msg.chat, msg.chat)
+    .map((x) => x.name)
+    .join('\n');
 
-	bot.sendMessage(
-			chatId,
-			resp,
-			{attachments: []}
-	);
+  const resp = `Room players:\n\n${rs}`;
+
+  bot.sendMessage(chatId, resp, { attachments: [] });
 });
 
 bot.onText(/^\/rooms/, (msg, match) => {
-	const chatId = msg.chat.id;
+  const chatId = msg.chat.id;
 
-	const rs = rooms.filter(x=>!x.private).map( x => `${x.name}: ${x.getLink()}`).join('\n');
-	
-	const resp =
-			`Click on a MetaStage room below to join:\n\n${rs}`;
+  const rs = rooms
+    .filter((x) => !x.private)
+    .map((x) => `${x.name}: ${x.getLink()}`)
+    .join('\n');
 
-	bot.sendMessage(
-			chatId,
-			resp,
-			{attachments: []}
-	);
+  const resp = `Click on a MetaStage room below to join:\n\n${rs}`;
+
+  bot.sendMessage(chatId, resp, { attachments: [] });
 });
 
 bot.onText(/^\/help/, (msg, match) => {
-  const chatId = msg.chat.id;
+		const chatId = msg.chat.id;
+		
+		const info = `To create subrooms in channels, pin a message to the group that contains the list in format of:
+
+		ROOMNAME MAX_USERS(number) MIXER(bool)
+		/join_Daohouse 5 no
+		/join_roomKitchen 4 yes
+		\nMIXER field will designate if room can be full or if subrooms are made.
+																`;
 
   bot.sendMessage(
     chatId,
-    `Basic commands:\n /start, /help \n\nGroup commands:\n/join \n\nStage commands:\n/look, /people`
+				`Basic commands:
+					/start, /help
+
+					Group commands:
+					/join - Set the current bot context to this room (bot must be installed in channel)
+					
+					Stage commands:
+					/look - See the current room context
+					/people  - See the current people here
+				/leave - Leave the current room and return to home.
+				
+				${info}`
   );
 });

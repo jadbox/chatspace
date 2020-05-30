@@ -7,8 +7,8 @@ function Room(info) {
     welcomeMsg: {},
     game: null,
     info: info,
-	id: info.id,
-	title: info.title || info.username,
+    id: info.id,
+    title: info.title || info.username,
     name: info.username,
     private: info.type === 'private',
     getLink() {
@@ -37,10 +37,10 @@ class Rooms {
     player = this.players[id] || new Player(playerObj);
     this.players[id] = player;
 
-	// does the current room exist?
-	this.add(info);
-	// if not private or room has not been set yet
-	 if (info.type!=='private' || !this.getPlayer(playerObj.id).room || forcePrivate) {
+    // does the current room exist?
+    this.add(info);
+    // if not private or room has not been set yet
+    if (info.type !== 'private' || !this.getPlayer(playerObj.id).room || forcePrivate) {
       // const playerInRoom = this.players[id]; // this.get(info).players[player.id];
 
       // add player to room;
@@ -48,17 +48,17 @@ class Rooms {
       // set player with room
       player.room = info.id;
 
-	  // console.log('Setting player room', player);
-	 }
+      // console.log('Setting player room', player);
+    }
   }
   getPlayer(id) {
-	// let player = this.players[id];
-	// player = this.players[id] || new Player(playerObj)
-	return this.players[id];
+    // let player = this.players[id];
+    // player = this.players[id] || new Player(playerObj)
+    return this.players[id];
   }
   getPlayerRoom(id) {
-	if(!this.players[id]) return null;
-	return this.get( {id:this.players[id].room });
+    if (!this.players[id]) return null;
+    return this.get({ id: this.players[id].room });
   }
   getPlayers(info) {
     if (this.exists(info)) return Object.values(this.get(info).players);
