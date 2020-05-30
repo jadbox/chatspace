@@ -1,24 +1,27 @@
 const { Player } = require('./player');
 
 class RoomInfo {
-	constructor(info) {
-		this.players = {};
-		this.rooms = {};
-		this.welcomeMsg =  {};
-		this.game = null;
-		this.info = info;
-		this.id = info.id;
-		this.title = info.title || info.username;
-		this.name = info.username;
-		this.private = info.type === 'private';
-	}
-	getLink() {
-		if (!this.info.username) return null;
-		return 'https://t.me/' + this.info.username;
-	}
-	numPlayers() {
-		return Object.keys(this.players).length;
-	}
+  constructor(info) {
+    this.players = {};
+    this.rooms = {};
+    this.welcomeMsg = {};
+    this.game = null;
+    this.info = info;
+    this.id = info.id;
+    this.title = info.title || info.username;
+    this.name = info.username;
+    this.private = info.type === 'private';
+  }
+  getLink() {
+    if (!this.info.username) return null;
+    return 'https://t.me/' + this.info.username;
+  }
+  numPlayers() {
+    return Object.keys(this.players).length;
+  }
+  getVideoLink() {
+    return `https://meet.jit.si/${this.info.username}`;
+  }
 }
 
 function Room(info) {
@@ -27,7 +30,7 @@ function Room(info) {
 
 class Rooms {
   constructor() {
-    this.list = {};
+    this.list = { '0': Room({id:-1001428794592, title:'MetaStage Community', username: 'MetaStage', type: 'supergroup'}) };
     this.players = {};
   }
   setPlayer(info, playerObj, forcePrivate) {
@@ -35,32 +38,45 @@ class Rooms {
 
     let player = this.players[id];
     if (!!player) {
+      this.players[id] = new Player(playerObj);
+
       const lroom = player.room;
       // delete from last room
-      if (lroom && this.exists(lroom)) delete this.get(lroom).players[id];
+      if (lroom && this.exists(lroom)) {
+        if (lroom.id === info.id) {
+          // console.log('already in room');
+          return false;
+        }
+        delete this.get(lroom).players[id];
+      }
     }
 
     // update or create
-    player = this.players[id] || new Player(playerObj);
+    player = player || new Player(playerObj);
     this.players[id] = player;
 
     // does the current room exist?
     this.add(info);
     // if not private or room has not been set yet
-    if (info.type !== 'private' || !this.getPlayer(playerObj.id).room || forcePrivate) {
-      // const playerInRoom = this.players[id]; // this.get(info).players[player.id];
+    // if (info.type !== 'private' || !this.getPlayer(playerObj.id).room || forcePrivate) {
+    // const playerInRoom = this.players[id]; // this.get(info).players[player.id];
 
-      // add player to room;
-      this.get(info).players[id] = player;
-      // set player with room
-      player.room = info.id;
+    // add player to room;
+    this.get(info).players[id] = player;
+    // set player with room
+    player.room = info.id;
 
-      // console.log('Setting player room', player);
-    }
+    // console.log('Setting player room', player);
+    // }
+    return true;
   }
-  getPlayer(id) {
+  getPlayer(id, upsertPlayerObj) {
     // let player = this.players[id];
     // player = this.players[id] || new Player(playerObj)
+    if (!this.players[id]) {
+      this.players[id] = Player(upsertPlayerObj);
+    }
+
     return this.players[id];
   }
   getPlayerRoom(id) {
@@ -72,8 +88,8 @@ class Rooms {
     else return [];
   }
   add(info) {
-	if (!info) throw new Error('no room info');
-	if (!info.id) throw new Error('no room id info');
+    if (!info) throw new Error('no room info');
+    if (!info.id) throw new Error('no room id info');
     if (this.list[info.id]) return;
 
     this.list[info.id] = Room(info);

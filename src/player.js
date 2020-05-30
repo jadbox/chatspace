@@ -7,7 +7,7 @@ function Player(from, pic) {
       name: from.username,
       id: from.id,
       from: from,
-      room: null
+      room: from.id
     };
   }
   
