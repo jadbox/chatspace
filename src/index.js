@@ -271,6 +271,9 @@ function sendToRoom(msg, text, showMe) {
 	});
 }
 
+// TODO pipe messages from room to stage
+// getChatMember
+
 bot.onText(/^[^\/]/, (msg, match) => {
   // console.log('msg.chat.type', msg.chat)
   if (msg.chat.type !== 'private') return;
@@ -438,7 +441,7 @@ bot.onText(/^\/start/, (msg, match) => {
 
   const rs = roomMessageStr(msg);
 
-  const resp = `Welcome to ${BOT_NAME}! Click on a MetaStage room below to join:\n\n${rs}`;
+  const resp = `Welcome to ${BOT_NAME}! Click on a MetaStage room below to join:\n\n${rs}\n\nType /help for commands`;
 
   bot.sendMessage(chatId, resp, { attachments: [] });
 });
@@ -484,13 +487,15 @@ bot.onText(/^\/help/, (msg, match) => {
 
   bot.sendMessage(
     chatId,
-    `Basic commands:
+				`MetaStage is a bot that turns Telegram Groups into chat rooms. MetaStageBot will be your view/interface for these rooms.
+
+				Basic commands:
 					/start
 					/help
-					/rooms view all rooms
+					/rooms view all MetaStage chat rooms
 
 					Group commands:
-					/join - Set the current bot context to this room (bot must be installed in channel)
+					/join - Set the current MetaStageBot context to this room (bot must be installed in channel)
 					
 					Stage commands:
 					/look - See the current room context
