@@ -218,13 +218,13 @@ bot.onText(/[\/]?(aid|heal|1up|🍿|🛡|💊|🥪) (.*)/i, (msg, match) => {
 // Listen for any kind of message. There are different kinds of
 // messages.
 bot.on('message', (msg, match) => {
-		// Register user to room
-		// Make it explicit join?
+  // Register user to room
+  // Make it explicit join?
   if (msg.from && msg.chat) {
-			rooms.add(msg.chat);
-			rooms.add(msg.from);
-			if(msg.from.type!=='private') rooms.setPlayer(msg.chat, msg.from);
-		}
+    rooms.add(msg.chat);
+    rooms.add(msg.from);
+    if (msg.from.type !== 'private') rooms.setPlayer(msg.chat, msg.from);
+  }
   return;
   const chatId = msg.chat.id;
 
@@ -302,22 +302,26 @@ async function introRoomMessage(msg, myroomId, justLooking) {
   if (justLooking) introMsg = `Current room`;
 
   //--
-		let pinnedMessage = '';
+  let pinnedMessage = '';
   if (!isHome) {
-				const d = await bot.getChat(room.id);
+    const d = await bot.getChat(room.id);
     // console.log('d.pinned_message', d.pinned_message)
     if (d.pinned_message && d.pinned_message.text) pinnedMessage = `\n\n${d.pinned_message.text}`;
   }
-		// --
-		let jitsi = `live: ${room.getVideoLink()}`;
+  // --
+  let jitsi = `live: ${room.getVideoLink()}`;
 
-  bot.sendMessage(
-    myroomId,
-    `${introMsg}: ${roomName}${linkText}
-${peopleMsg}
-${jitsi}${pinnedMessage}`,
-    { attachments: [], disable_web_page_preview: true }
-  );
+  try {
+    bot.sendMessage(
+      myroomId,
+      `${introMsg}: ${roomName}${linkText}
+	${peopleMsg}
+	${jitsi}${pinnedMessage}`,
+      { attachments: [], disable_web_page_preview: true }
+    );
+  } catch (e) {
+    bot.sendMessage(room.id, 'Please talk with @MetaStageBot first');
+  }
 }
 
 bot.onText(/^\/look/, (msg, match) => {
@@ -356,31 +360,31 @@ bot.onText(/^\/join(_.*)*/, async (msg, match) => {
   const userid = msg.from.id; // get the user id to send a message direct
   rooms.add({ id: userid });
 
-		const currentRoomId = rooms.getPlayer(msg.from.id, msg.from).room;
-		const result = rooms.setPlayer(targetRoom, msg.from);
-		
-		if(!result && isPrivate(msg)) {
-			bot.sendMessage(msg.chat.id, 'already in room: ' + targetRoom.title);
-			return;
-		}
+  const currentRoomId = rooms.getPlayer(msg.from.id, msg.from).room;
+  const result = rooms.setPlayer(targetRoom, msg.from);
+
+  if (!result && isPrivate(msg)) {
+    bot.sendMessage(msg.chat.id, 'already in room: ' + targetRoom.title);
+    return;
+  }
 
   introRoomMessage(msg, userid);
 
   try {
-    if(!isPrivate(msg)) bot.deleteMessage(chatId, msg.message_id);
-		} catch (e) {}
-		
-		// notify
-		const leftPlayers = rooms.getPlayers(currentRoomId).filter(x=>x.id!==userid);
-		leftPlayers.forEach(p=>{
-				if(p.room) bot.sendMessage(p.room, `${msg.from.username} left`);
-		});
+    if (!isPrivate(msg)) bot.deleteMessage(chatId, msg.message_id);
+  } catch (e) {}
 
-		const players = rooms.getPlayers(targetRoom).filter(x=>x.id!==userid);
-		players.forEach(p=>{
-				if(p.room) bot.sendMessage(p.room, `${msg.from.username} enters`);
-		});
-		// ===
+  // notify
+  const leftPlayers = rooms.getPlayers(currentRoomId).filter((x) => x.id !== userid);
+  leftPlayers.forEach((p) => {
+    if (p.room) bot.sendMessage(p.room, `${msg.from.username} left`);
+  });
+
+  const players = rooms.getPlayers(targetRoom).filter((x) => x.id !== userid);
+  players.forEach((p) => {
+    if (p.room) bot.sendMessage(p.room, `${msg.from.username} enters`);
+  });
+  // ===
 });
 
 // Add user to room
@@ -392,9 +396,9 @@ bot.onText(/^\/(leave|home)/, (msg, match) => {
   // rooms.remove(msg.chat);
   rooms.setPlayer(msg.from, msg.from, true);
 
-		introRoomMessage(msg, msg.from.id, true);
-		
-		console.log(rooms.get(msg.from.id));
+  introRoomMessage(msg, msg.from.id, true);
+
+  console.log(rooms.get(msg.from.id));
 });
 
 function roomMessageStr(msg) {
