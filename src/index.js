@@ -309,14 +309,16 @@ async function introRoomMessage(msg, myroomId, justLooking) {
     if (d.pinned_message && d.pinned_message.text) pinnedMessage = `\n\n${d.pinned_message.text}`;
   }
   // --
-  let jitsi = `live: ${room.getVideoLink()}`;
+		let jitsi = `* live: ${room.getVideoLink()}`;
+		//--
+		let game = roomName==='MetaStage Community'?`\n * items on ground:\n   - 2x RaidToken\n * bots:\n   - A Skeleton`:'';
 
   try {
     bot.sendMessage(
       myroomId,
       `${introMsg}: ${roomName}${linkText}
-	${peopleMsg}
-	${jitsi}${pinnedMessage}`,
+	* ${peopleMsg}
+	${jitsi}${game}${pinnedMessage}`,
       { attachments: [], disable_web_page_preview: true }
     );
   } catch (e) {
