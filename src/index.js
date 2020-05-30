@@ -276,7 +276,8 @@ bot.onText(/^[^\/]/, (msg, match) => {
   if (msg.chat.type !== 'private') return;
   // if(msg.from && msg.chat) rooms.setPlayer(msg.chat, msg.from);
 
-  sendToRoom(msg, `${msg.from.username}: ${msg.text}`);
+		sendToRoom(msg, `${msg.from.username}: ${msg.text}`);
+		// sometimes notify on number of listeners?
 });
 
 async function introRoomMessage(msg, myroomId, justLooking) {
