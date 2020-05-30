@@ -320,7 +320,7 @@ bot.onText(/^\/join/, (msg, match) => {
   rooms.add(msg.chat);
 
   const chatId = msg.chat.id;
-  console.log(msg);
+  // console.log(msg);
   // create
   rooms.add(msg.chat);
   // ensure user room is init
@@ -343,8 +343,6 @@ bot.onText(/^\/join/, (msg, match) => {
 // Leave?
 bot.onText(/^\/(leave|home)/, (msg, match) => {
   if (!onlyStage(msg)) return;
-
-  const chatId = msg.chat.id;
 
   // rooms.remove(msg.chat);
   rooms.setPlayer(msg.from, msg.from, true);
