@@ -304,7 +304,7 @@ async function introRoomMessage(msg, myroomId, justLooking) {
   //--
 		let pinnedMessage = '';
   if (!isHome) {
-    const d = await bot.getChat(msg.chat.id);
+				const d = await bot.getChat(room.id);
     // console.log('d.pinned_message', d.pinned_message)
     if (d.pinned_message && d.pinned_message.text) pinnedMessage = `\n\n${d.pinned_message.text}`;
   }
@@ -316,7 +316,7 @@ async function introRoomMessage(msg, myroomId, justLooking) {
     `${introMsg}: ${roomName}${linkText}
 ${peopleMsg}
 ${jitsi}${pinnedMessage}`,
-    { attachments: [] }
+    { attachments: [], disable_web_page_preview: true }
   );
 }
 
@@ -345,7 +345,7 @@ bot.onText(/^\/join(_.*)*/, async (msg, match) => {
       console.log('no such room:' + targetRoom);
       return;
     }
-    console.log('targerRoom', targetRoom);
+    // console.log('targerRoom', targetRoom);
   }
 
   const chatId = msg.chat.id;
@@ -356,6 +356,7 @@ bot.onText(/^\/join(_.*)*/, async (msg, match) => {
   const userid = msg.from.id; // get the user id to send a message direct
   rooms.add({ id: userid });
 
+		const currentRoomId = rooms.getPlayer(msg.from.id, msg.from).room;
 		const result = rooms.setPlayer(targetRoom, msg.from);
 		
 		if(!result && isPrivate(msg)) {
@@ -367,7 +368,19 @@ bot.onText(/^\/join(_.*)*/, async (msg, match) => {
 
   try {
     if(!isPrivate(msg)) bot.deleteMessage(chatId, msg.message_id);
-  } catch (e) {}
+		} catch (e) {}
+		
+		// notify
+		const leftPlayers = rooms.getPlayers(currentRoomId).filter(x=>x.id!==userid);
+		leftPlayers.forEach(p=>{
+				if(p.room) bot.sendMessage(p.room, `${msg.from.username} left`);
+		});
+
+		const players = rooms.getPlayers(targetRoom).filter(x=>x.id!==userid);
+		players.forEach(p=>{
+				if(p.room) bot.sendMessage(p.room, `${msg.from.username} enters`);
+		});
+		// ===
 });
 
 // Add user to room
