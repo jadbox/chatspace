@@ -266,7 +266,7 @@ function onlyStage(msg) {
 
 // ===========
 
-function introRoomMessage(msg, myroomId, justLooking) {
+async function introRoomMessage(msg, myroomId, justLooking) {
 
 	// console.log('join', myroomId, roomcontext);
 
@@ -276,23 +276,34 @@ function introRoomMessage(msg, myroomId, justLooking) {
 	let roomName = room.title;
 
 	let linkText = '';
+	let isHome = false;
 	if(roomName===msg.from.username) {
 		roomName = 'home';
+		isHome = true;
 	} else {
-		linkText = `\nlink: ${room.getLink()}`;
+		linkText = ` ${room.getLink()}`;
 	}
 	
-	const resp =
+	const peopleMsg =
 			`active people: ${rs}`;
 
 	let introMsg = `You've entered`;
 	if(justLooking) introMsg = `Current room`;
 
+	//--
+	let pinnedMessage = '';
+	if(!isHome) {
+		const d = await bot.getChat(msg.chat.id);
+		// console.log('d.pinned_message', d.pinned_message)
+		if(d.pinned_message && d.pinned_message.text) pinnedMessage = `\n\n${d.pinned_message.text}`
+	}
+	// --
+
 	bot.sendMessage(
 		myroomId,
-		`${introMsg}: ${roomName}.\n${resp}${linkText}`
+		`${introMsg}: ${roomName}${linkText}.\n${peopleMsg}${pinnedMessage}`,
+		{attachments: []}
 	);
-
 }
 
 bot.onText(/^\/look/, (msg, match) => {
@@ -395,6 +406,6 @@ bot.onText(/^\/help/, (msg, match) => {
 
   bot.sendMessage(
     chatId,
-    `Basic commands:\n /start`
+    `Basic commands:\n /start, /help \n\nGroup commands:\n/join \n\nStage commands:\n/look, /people`
   );
 });
