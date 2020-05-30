@@ -274,17 +274,23 @@ function introRoomMessage(msg, myroomId, justLooking) {
 	const rs = rooms.getPlayers(room).map(x=>x.name).join(', ');
 
 	let roomName = room.title;
-	if(roomName===msg.from.username) roomName = 'home';
+
+	let linkText = '';
+	if(roomName===msg.from.username) {
+		roomName = 'home';
+	} else {
+		linkText = `\nlink: ${room.getLink()}`;
+	}
 	
 	const resp =
-			`People here: ${rs}`;
+			`active people: ${rs}`;
 
 	let introMsg = `You've entered`;
 	if(justLooking) introMsg = `Current room`;
 
 	bot.sendMessage(
 		myroomId,
-		`${introMsg}: ${roomName}.\n${resp}`
+		`${introMsg}: ${roomName}.\n${resp}${linkText}`
 	);
 
 }
