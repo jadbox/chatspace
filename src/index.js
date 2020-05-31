@@ -429,6 +429,48 @@ bot.onText(/^\/dance/, (msg, match) => {
 	sendToRoom(msg, `🎶🎶 ${msg.from.username} starts dancing 🎶🎶`, true);
 });
 
+bot.onText(/^\/(attack)(.*)*/, (msg, match) => {
+	if (!onlyStage(msg)) return;
+
+	if(!match[1]) {
+		send(msg.chat.id, 'attack what?');
+		return;
+	}
+
+	let opp = match[2].replace(' ', '');
+	// console.log(match);
+	
+	sendToRoom(msg, `⚔️ ${msg.from.username} attacks ${opp} for ${Math.ceil(Math.random() * 10)} damage! ⚔️`, true);
+});
+
+bot.onText(/^\/(heal)(.*)*/, (msg, match) => {
+	if (!onlyStage(msg)) return;
+
+	if(!match[1]) {
+		send(msg.chat.id, 'attack what?');
+		return;
+	}
+
+	let opp = match[2].replace(' ', '');
+	// console.log(match);
+	
+	sendToRoom(msg, `⚔️ ${msg.from.username} heals ${opp} for ${Math.ceil(Math.random() * 10)}hp! ⚔️`, true);
+});
+
+bot.onText(/^\/(take|pickup)(.*)*/, (msg, match) => {
+	if (!onlyStage(msg)) return;
+
+	if(!match[1]) {
+		send(msg.chat.id, 'pickup what?');
+		return;
+	}
+
+	let opp = match[2].replace(' ', '');
+	console.log(match);
+	
+	sendToRoom(msg, `💁 ${msg.from.username} takes a ${opp}`, true);
+});
+
 bot.onText(/^\/start/, (msg, match) => {
   const chatId = msg.chat.id;
   // console.log(msg.chat);
@@ -502,8 +544,22 @@ bot.onText(/^\/help/, (msg, match) => {
 					/people  - See the current people here
 					/leave - Leave the current room and return to home.
 					/dance, /wave - expressions
-					/take NAME - WIP, not available yet
-					/attack NAME - WIP, not available yet
+					/take NAME - WIP
+					/attack NAME - WIP
+					/inventory - WIP
 				` // ${info}
   );
+});
+
+bot.onText(/^\/inventory/, (msg, match) => {
+	const chatId = msg.chat.id;
+
+	bot.sendMessage(
+			chatId,
+			`
+			Your inventory:
+
+			* 3x MetaStage Token(s)
+			` // ${info}
+	);
 });
