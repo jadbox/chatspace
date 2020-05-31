@@ -586,10 +586,10 @@ bot.onText(/^\/help/, (msg, match) => {
 					
           Stage commands:
           [any message] - all members in the stage will see
+          /whereami - name of current room
           /yell - say something back to the supergroup
 					/look - See the current room context
           /people  - See the current active people here
-          /whereami - name of current room
 					/leave - Leave the current room and return to home.
 					/dance, /wave - expressions
 					/take NAME - WIP
