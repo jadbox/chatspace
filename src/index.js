@@ -401,7 +401,7 @@ bot.onText(/^\/join([_\s].*)*/, async (msg, match) => {
   const userid = msg.from.id; // get the user id to send a message direct
   rooms.add({ id: userid });
 
-  const currentRoomId = rooms.getPlayer(msg.from).room;
+  const currentRoomId = rooms.getPlayerRoom(msg.from).id;
   const result = rooms.setPlayer(targetRoom, msg.from);
 
   if (!result && isPrivate(msg)) {
@@ -412,13 +412,16 @@ bot.onText(/^\/join([_\s].*)*/, async (msg, match) => {
   introRoomMessage(msg);
 
   try {
-    if (!isPrivate(msg)) bot.deleteMessage(chatId, msg.message_id);
+    if (!isPrivate(msg)) {
+      bot.deleteMessage(chatId, msg.message_id);
+      bot.sendMessage(chatId, `${msg.from.username} joined room within @MetaStageBot`);
+    }
   } catch (e) {}
 
   // notify
   const leftPlayers = rooms.getPlayers(currentRoomId).filter((x) => x.id !== userid);
   leftPlayers.forEach((p) => {
-    if (p.room) bot.sendMessage(p.room, `${msg.from.username} left`);
+    if (p.room) bot.sendMessage(p.id, `${msg.from.username} left`);
   });
 
   const players = rooms.getPlayers(targetRoom).filter((x) => x.id !== userid);
@@ -464,7 +467,7 @@ bot.onText(/^\/dance/, (msg, match) => {
 bot.onText(/^\/(attack)(.*)*/, (msg, match) => {
 	if (!onlyStage(msg)) return;
 
-	if(!match[1]) {
+	if(!match[2]) {
 		send(msg.chat.id, 'attack what?');
 		return;
 	}
@@ -478,7 +481,7 @@ bot.onText(/^\/(attack)(.*)*/, (msg, match) => {
 bot.onText(/^\/(heal)(.*)*/, (msg, match) => {
 	if (!onlyStage(msg)) return;
 
-	if(!match[1]) {
+	if(!match[2]) {
 		send(msg.chat.id, 'attack what?');
 		return;
 	}
@@ -523,10 +526,12 @@ bot.onText(/^\/start/, (msg, match) => {
 bot.onText(/^\/(players|people)/, (msg, match) => {
   const chatId = msg.chat.id;
 
+  const room = rooms.getPlayerRoom(msg.from); // myroomId
+  // console.log('room', room);
   const rs = rooms
-    .getPlayers(msg.chat, msg.chat)
+    .getPlayers(room)
     .map((x) => x.name)
-    .join('\n');
+    .join(', ');
 
   const resp = `Active people:\n\n${rs}`;
 
