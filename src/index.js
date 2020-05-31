@@ -401,13 +401,19 @@ bot.onText(/^\/join([_\s].*)*/, async (msg, match) => {
   const userid = msg.from.id; // get the user id to send a message direct
   rooms.add({ id: userid });
 
-  const currentRoomId = rooms.getPlayerRoom(msg.from).id;
-  const result = rooms.setPlayer(targetRoom, msg.from);
+  const currentRoom = rooms.getPlayerRoom(msg.from);
 
-  if (!result && isPrivate(msg)) {
-    bot.sendMessage(msg.chat.id, 'already in room: ' + targetRoom.title);
+  if(currentRoom.id === targetRoom.id) {
+    bot.sendMessage(msg.from.id, 'already in room: ' + targetRoom.title);
     return;
   }
+
+  const result = rooms.setPlayer(targetRoom, msg.from);
+
+  /* if (!result && isPrivate(msg)) {
+    bot.sendMessage(msg.chat.id, 'already in room: ' + targetRoom.title);
+    return;
+  }*/
 
   introRoomMessage(msg);
 
@@ -419,7 +425,7 @@ bot.onText(/^\/join([_\s].*)*/, async (msg, match) => {
   } catch (e) {}
 
   // notify
-  const leftPlayers = rooms.getPlayers(currentRoomId).filter((x) => x.id !== userid);
+  const leftPlayers = rooms.getPlayers(currentRoom).filter((x) => x.id !== userid);
   leftPlayers.forEach((p) => {
     if (p.room) bot.sendMessage(p.id, `${msg.from.username} left`);
   });
@@ -523,17 +529,19 @@ bot.onText(/^\/start/, (msg, match) => {
   bot.sendMessage(chatId, resp, { attachments: [] });
 });
 
-bot.onText(/^\/(players|people)/, (msg, match) => {
+bot.onText(/^\/(players|people|whereami)/, (msg, match) => {
   const chatId = msg.chat.id;
 
   const room = rooms.getPlayerRoom(msg.from); // myroomId
   // console.log('room', room);
-  const rs = rooms
+  let rs = rooms
     .getPlayers(room)
     .map((x) => x.name)
     .join(', ');
 
-  const resp = `Active people:\n\n${rs}`;
+  if(!rs) rs = 'empty room';
+
+  const resp = `You are in ${room.title} with:\n${rs}`;
 
   bot.sendMessage(chatId, resp, { attachments: [] });
 });
@@ -580,7 +588,8 @@ bot.onText(/^\/help/, (msg, match) => {
           [any message] - all members in the stage will see
           /yell - say something back to the supergroup
 					/look - See the current room context
-					/people  - See the current people here
+          /people  - See the current active people here
+          /whereami - name of current room
 					/leave - Leave the current room and return to home.
 					/dance, /wave - expressions
 					/take NAME - WIP
