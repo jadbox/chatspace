@@ -33,8 +33,9 @@ class Rooms {
     this.list = { '-1001428794592': Room({id:-1001428794592, title:'MetaStage Community', username: 'MetaStage', type: 'supergroup'}) };
     this.players = {};
   }
-  setPlayer(info, playerObj, forcePrivate) {
+  setPlayer(info, playerObj) {
     const id = playerObj.id; //username;
+    // console.log('info, playerObj', info, playerObj);
 
     let player = this.players[id];
     if (!!player) {
@@ -70,18 +71,25 @@ class Rooms {
     // }
     return true;
   }
-  getPlayer(id, upsertPlayerObj) {
+  getPlayer(upsertPlayerObj) {
+    if(!upsertPlayerObj.id) throw new Error('no player id');
+
+    const id = upsertPlayerObj.id;
     // let player = this.players[id];
     // player = this.players[id] || new Player(playerObj)
     if (!this.players[id]) {
       this.players[id] = Player(upsertPlayerObj);
+      this.add(upsertPlayerObj); // create players room
     }
 
     return this.players[id];
   }
-  getPlayerRoom(id) {
-    if (!this.players[id]) return null;
-    return this.get({ id: this.players[id].room });
+  getPlayerRoom(info) {
+    if(!info.id) throw new Error('no player id');
+    const p = this.getPlayer(info);
+
+   //  if (!this.players[id]) return null;
+    return this.get({ id: p.room });
   }
   getPlayers(info) {
     if (this.exists(info)) return Object.values(this.get(info).players);

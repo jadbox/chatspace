@@ -220,10 +220,12 @@ bot.onText(/[\/]?(aid|heal|1up|🍿|🛡|💊|🥪) (.*)/i, (msg, match) => {
 bot.on('message', (msg, match) => {
   // Register user to room
   // Make it explicit join?
-  if (msg.from && msg.chat) {
+  if (msg.from && msg.chat && !msg.from.is_bot) {
     rooms.add(msg.chat);
     rooms.add(msg.from);
-    if (msg.from.type !== 'private') rooms.setPlayer(msg.chat, msg.from);
+    // console.log(msg.from)
+    // BUG
+    // if (msg.from.type !== 'private') rooms.setPlayer(msg.chat, msg.from);
   }
   return;
   const chatId = msg.chat.id;
@@ -259,15 +261,20 @@ function onlyStage(msg) {
 }
 
 // ===========
+// showMe - always show message to self
 function sendToRoom(msg, text, showMe) {
-	rooms.add(msg.chat);
+  // rooms.add(msg.chat);
+  const userId = msg.from.id;
 
 	// console.log(msg);
 
-	const room = rooms.getPlayerRoom(msg.from.id);
+	const room = rooms.getPlayerRoom(userId);
 	const rs = rooms.getPlayers(room);
 	rs.forEach((player) => {
-			if (player.id !== msg.from.id || !!showMe) bot.sendMessage(player.id, `${text}`);
+      // show message if not from self on stage or if sent from non-stage
+      const con = (player.id !== userId || msg.chat.type!=='private');
+
+			if ( con || showMe) bot.sendMessage(player.id, `${text}`);
 	});
 }
 
@@ -275,18 +282,24 @@ function sendToRoom(msg, text, showMe) {
 // getChatMember
 
 bot.onText(/^[^\/]/, (msg, match) => {
-  // console.log('msg.chat.type', msg.chat)
-  if (msg.chat.type !== 'private') return;
+  // console.log('msg.chat.type', msg)
+  if (msg.chat.type !== 'private') {
+    sendToRoom(msg, `${msg.from.username}: ${msg.text}`);
+    return;
+  }
   // if(msg.from && msg.chat) rooms.setPlayer(msg.chat, msg.from);
 
-		sendToRoom(msg, `${msg.from.username}: ${msg.text}`);
+	sendToRoom(msg, `${msg.from.username} says: ${msg.text}`);
 		// sometimes notify on number of listeners?
 });
 
-async function introRoomMessage(msg, myroomId, justLooking) {
-  // console.log('join', myroomId, roomcontext);
+// TODO remove myroomId??
+async function introRoomMessage(msg, justLooking) {
+  // console.log('join myroomId, from', myroomId, msg.from);
+  // rooms.add(msg.from);
 
-  const room = rooms.getPlayerRoom(myroomId);
+  const room = rooms.getPlayerRoom(msg.from); // myroomId
+  console.log('room', room);
   const rs = rooms
     .getPlayers(room)
     .map((x) => x.name)
@@ -310,7 +323,7 @@ async function introRoomMessage(msg, myroomId, justLooking) {
 
   //--
   let pinnedMessage = '';
-  if (!isHome) {
+  if (!isHome) { //  && !justLooking
     const d = await bot.getChat(room.id);
     // console.log('d.pinned_message', d.pinned_message)
     if (d.pinned_message && d.pinned_message.text) pinnedMessage = `\n\n${d.pinned_message.text}`;
@@ -334,13 +347,12 @@ async function introRoomMessage(msg, myroomId, justLooking) {
 }
 
 bot.onText(/^\/look/, (msg, match) => {
-  if (!onlyStage(msg)) return;
+  // if (!onlyStage(msg)) return;
   rooms.add(msg.chat);
-
-  introRoomMessage(msg, msg.from.id, true);
+  introRoomMessage(msg, true);
 });
 
-bot.onText(/^\/join(_.*)*/, async (msg, match) => {
+bot.onText(/^\/join([_\s].*)*/, async (msg, match) => {
   // join anywhere
   rooms.add(msg.chat);
   // ---
@@ -359,6 +371,11 @@ bot.onText(/^\/join(_.*)*/, async (msg, match) => {
       return;
     }
     // console.log('targerRoom', targetRoom);
+  } else {
+    if(msg.chat.type==='private') {
+      send(msg.chat.id, 'join what room?');
+      return;
+    }
   }
 
   const chatId = msg.chat.id;
@@ -369,7 +386,7 @@ bot.onText(/^\/join(_.*)*/, async (msg, match) => {
   const userid = msg.from.id; // get the user id to send a message direct
   rooms.add({ id: userid });
 
-  const currentRoomId = rooms.getPlayer(msg.from.id, msg.from).room;
+  const currentRoomId = rooms.getPlayer(msg.from).room;
   const result = rooms.setPlayer(targetRoom, msg.from);
 
   if (!result && isPrivate(msg)) {
@@ -377,7 +394,7 @@ bot.onText(/^\/join(_.*)*/, async (msg, match) => {
     return;
   }
 
-  introRoomMessage(msg, userid);
+  introRoomMessage(msg);
 
   try {
     if (!isPrivate(msg)) bot.deleteMessage(chatId, msg.message_id);
@@ -391,7 +408,7 @@ bot.onText(/^\/join(_.*)*/, async (msg, match) => {
 
   const players = rooms.getPlayers(targetRoom).filter((x) => x.id !== userid);
   players.forEach((p) => {
-    if (p.room) bot.sendMessage(p.room, `${msg.from.username} enters`);
+    if (p.room) bot.sendMessage(p.id, `${msg.from.username} enters`);
   });
   // ===
 });
@@ -405,7 +422,7 @@ bot.onText(/^\/(leave|home)/, (msg, match) => {
   // rooms.remove(msg.chat);
   rooms.setPlayer(msg.from, msg.from, true);
 
-  introRoomMessage(msg, msg.from.id, true);
+  introRoomMessage(msg, true);
 
   console.log(rooms.get(msg.from.id));
 });
