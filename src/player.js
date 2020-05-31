@@ -7,7 +7,7 @@ function Player(from, pic) {
       name: from.username,
       id: from.id,
       from: from,
-      room: from.id
+      room: '-1001428794592' // MetaStage Community
     };
   }
   

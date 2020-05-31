@@ -10,7 +10,7 @@ class RoomInfo {
     this.id = info.id;
     this.title = info.title || info.username;
     this.name = info.username;
-    this.private = info.type === 'private';
+    this.private = (info.type === 'private' || !info.type);
   }
   getLink() {
     if (!this.info.username) return null;
