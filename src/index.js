@@ -75,7 +75,7 @@ const sendPoll = async (chatId, question, pollOptions, options) => {
 // Commands
 
 bot.onText(/\/echo (.+)/, (msg, match) => {
-  console.log(msg.from.username);
+  // console.log(msg.from.username);
   // 'msg' is the received Message from Telegram
   // 'match' is the result of executing the regexp above on the text content
   // of the message
@@ -268,7 +268,7 @@ function sendToRoom(msg, text, showMe) {
 
 	// console.log(msg);
 
-	const room = rooms.getPlayerRoom(userId);
+	const room = rooms.getPlayerRoom(msg.from);
 	const rs = rooms.getPlayers(room);
 	rs.forEach((player) => {
       // show message if not from self on stage or if sent from non-stage
@@ -293,13 +293,27 @@ bot.onText(/^[^\/]/, (msg, match) => {
 		// sometimes notify on number of listeners?
 });
 
+bot.onText(/^\/yell (.*)/, (msg, match) => {
+  if (!onlyStage(msg)) return;
+  console.log('match', match[1]);
+
+  const text = match[1];
+  // if(msg.from && msg.chat) rooms.setPlayer(msg.chat, msg.from);
+
+  sendToRoom(msg, `${msg.from.username} says: ${text}`);
+
+  const room = rooms.getPlayerRoom(msg.from);
+  send(room.id, `${msg.from.username} yells: ${text}`);
+		// sometimes notify on number of listeners?
+});
+
 // TODO remove myroomId??
 async function introRoomMessage(msg, justLooking) {
   // console.log('join myroomId, from', myroomId, msg.from);
   // rooms.add(msg.from);
 
   const room = rooms.getPlayerRoom(msg.from); // myroomId
-  console.log('room', room);
+  // console.log('room', room);
   const rs = rooms
     .getPlayers(room)
     .map((x) => x.name)
@@ -335,13 +349,14 @@ async function introRoomMessage(msg, justLooking) {
 
   try {
     bot.sendMessage(
-      myroomId,
+      msg.from.id,
       `${introMsg}: ${roomName}${linkText}
 	* ${peopleMsg}
 	${jitsi}${game}${pinnedMessage}`,
       { attachments: [], disable_web_page_preview: true }
     );
   } catch (e) {
+    console.log('error', e);
     bot.sendMessage(room.id, 'Please talk with @MetaStageBot first');
   }
 }
@@ -483,7 +498,7 @@ bot.onText(/^\/(take|pickup)(.*)*/, (msg, match) => {
 	}
 
 	let opp = match[2].replace(' ', '');
-	console.log(match);
+	// console.log(match);
 	
 	sendToRoom(msg, `💁 ${msg.from.username} takes a ${opp}`, true);
 });
@@ -556,7 +571,9 @@ bot.onText(/^\/help/, (msg, match) => {
 					Group commands:
 					/join - Set the current MetaStageBot context to this room (bot must be installed in channel)
 					
-					Stage commands:
+          Stage commands:
+          [any message] - all members in the stage will see
+          /yell - say something back to the supergroup
 					/look - See the current room context
 					/people  - See the current people here
 					/leave - Leave the current room and return to home.

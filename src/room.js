@@ -35,7 +35,6 @@ class Rooms {
   }
   setPlayer(info, playerObj) {
     const id = playerObj.id; //username;
-    // console.log('info, playerObj', info, playerObj);
 
     let player = this.players[id];
     if (!!player) {
@@ -67,8 +66,6 @@ class Rooms {
     // set player with room
     player.room = info.id;
 
-    // console.log('Setting player room', player);
-    // }
     return true;
   }
   getPlayer(upsertPlayerObj) {
