@@ -267,16 +267,16 @@ function sendToRoom(msg, text, showMe) {
   // rooms.add(msg.chat);
   const userId = msg.from.id;
 
-	// console.log(msg);
+  // console.log(msg);
 
-	const room = rooms.getPlayerRoom(msg.from);
-	const rs = rooms.getPlayers(room);
-	rs.forEach((player) => {
-      // show message if not from self on stage or if sent from non-stage
-      const con = (player.id !== userId || msg.chat.type!=='private');
+  const room = rooms.getPlayerRoom(msg.from);
+  const rs = rooms.getPlayers(room);
+  rs.forEach((player) => {
+    // show message if not from self on stage or if sent from non-stage
+    const con = player.id !== userId || msg.chat.type !== 'private';
 
-			if ( con || showMe) bot.sendMessage(player.id, `${text}`);
-	});
+    if (con || showMe) bot.sendMessage(player.id, `${text}`);
+  });
 }
 
 // TODO pipe messages from room to stage
@@ -290,8 +290,8 @@ bot.onText(/^[^\/]/, (msg, match) => {
   }
   // if(msg.from && msg.chat) rooms.setPlayer(msg.chat, msg.from);
 
-	sendToRoom(msg, `${msg.from.username} says: ${msg.text}`);
-		// sometimes notify on number of listeners?
+  sendToRoom(msg, `${msg.from.username} says: ${msg.text}`);
+  // sometimes notify on number of listeners?
 });
 
 bot.onText(/^\/yell (.*)/, (msg, match) => {
@@ -305,13 +305,14 @@ bot.onText(/^\/yell (.*)/, (msg, match) => {
 
   const room = rooms.getPlayerRoom(msg.from);
   send(room.id, `${msg.from.username} yells: ${text}`);
-		// sometimes notify on number of listeners?
+  // sometimes notify on number of listeners?
 });
 
 // TODO remove myroomId??
 async function introRoomMessage(msg, justLooking) {
   // console.log('join myroomId, from', myroomId, msg.from);
   // rooms.add(msg.from);
+  rooms.add(msg.chat);
 
   const room = rooms.getPlayerRoom(msg.from); // myroomId
   // console.log('room', room);
@@ -338,15 +339,17 @@ async function introRoomMessage(msg, justLooking) {
 
   //--
   let pinnedMessage = '';
-  if (!isHome) { //  && !justLooking
+  if (!isHome) {
+    //  && !justLooking
     const d = await bot.getChat(room.id);
-    console.log('d.pinned_message', d)
+    console.log('d.pinned_message', d);
     if (d.pinned_message && d.pinned_message.text) pinnedMessage = `\n\n${d.pinned_message.text}`;
   }
   // --
-		let jitsi = `* live: ${room.getVideoLink()}`;
-		//--
-		let game = roomName==='MetaRoom Community'?`\n * items on ground:\n   - 2x RaidToken\n * bots:\n   - A Skeleton`:'';
+  let jitsi = `* live: ${room.getVideoLink()}`;
+  //--
+  let game =
+    roomName === 'MetaRoom Community' ? `\n * items on ground:\n   - 2x RaidToken\n * bots:\n   - A Skeleton` : '';
 
   try {
     bot.sendMessage(
@@ -364,9 +367,20 @@ async function introRoomMessage(msg, justLooking) {
 
 bot.onText(/^\/look/, (msg, match) => {
   // if (!onlyStage(msg)) return;
-  rooms.add(msg.chat);
+
   introRoomMessage(msg, true);
 });
+
+async function canJoin(msg, targetRoom) {
+  const userPermission = await bot.getChatMember(targetRoom.id, msg.from.id);
+  if (
+    (userPermission.is_member === false && userPermission.can_send_messages === false) ||
+    userPermission.status === 'kicked'
+  ) {
+    return false;
+  }
+  return true;
+}
 
 bot.onText(/^\/join([_\s].*)*/, async (msg, match) => {
   // join anywhere
@@ -384,11 +398,11 @@ bot.onText(/^\/join([_\s].*)*/, async (msg, match) => {
     try {
       targetRoom = await bot.getChat(troomUserName);
     } catch (e) {
-      console.log('getChat error:', e)
+      console.log('getChat error:', e);
     }
 
-    const userPermission = await bot.getChatMember(targetRoom.id, msg.from.id);
-    if((userPermission.is_member===false && userPermission.can_send_messages===false) || userPermission.status==='kicked') {
+    const userPermissioned = canJoin(msg, targetRoom);
+    if (!userPermissioned) {
       // console.log('userPermission', userPermission)
       send(msg.chat.id, `Do not have permissions for: ${troomUserName}`);
       return;
@@ -399,10 +413,9 @@ bot.onText(/^\/join([_\s].*)*/, async (msg, match) => {
       return;
     }
 
-    
     // console.log('targerRoom', targetRoom);
   } else {
-    if(msg.chat.type==='private') {
+    if (msg.chat.type === 'private') {
       send(msg.chat.id, 'join what room?');
       return;
     }
@@ -418,7 +431,7 @@ bot.onText(/^\/join([_\s].*)*/, async (msg, match) => {
 
   const currentRoom = rooms.getPlayerRoom(msg.from);
 
-  if(currentRoom.id === targetRoom.id) {
+  if (currentRoom.id === targetRoom.id) {
     bot.sendMessage(msg.from.id, 'already in room: ' + targetRoom.title);
     return;
   }
@@ -463,68 +476,74 @@ bot.onText(/^\/(leave|home)/, (msg, match) => {
 
   introRoomMessage(msg, true);
 
-  console.log(rooms.get(msg.from.id));
+  // console.log(rooms.get(msg.from.id));
 });
 
 function roomMessageStr(msg) {
   return rooms
     .filter((x) => !x.private)
-    .map((x) => `/join_${x.name} [peeps=${x.numPlayers()}]		${x.getLink()}`)
+    .filter((x) => x.type === 'supergroup') // TODO
+    /*.filter(async (x) => {
+      const userPermissioned = await canJoin(msg, targetRoom);
+      return userPermissioned;
+    })*/ .map(
+      (x) => `/join_${x.name} [peeps=${x.numPlayers()}]		${x.getLink()}`
+    )
     .join('\n');
 }
 
 bot.onText(/^\/wave/, (msg, match) => {
-	if (!onlyStage(msg)) return;
+  if (!onlyStage(msg)) return;
 
-	sendToRoom(msg, `${msg.from.username} waves 👋`, true);
+  sendToRoom(msg, `${msg.from.username} waves 👋`, true);
 });
 
 bot.onText(/^\/dance/, (msg, match) => {
-	if (!onlyStage(msg)) return;
-	
-	sendToRoom(msg, `🎶🎶 ${msg.from.username} starts dancing 🎶🎶`, true);
+  if (!onlyStage(msg)) return;
+
+  sendToRoom(msg, `🎶🎶 ${msg.from.username} starts dancing 🎶🎶`, true);
 });
 
 bot.onText(/^\/(attack)(.*)*/, (msg, match) => {
-	if (!onlyStage(msg)) return;
+  if (!onlyStage(msg)) return;
 
-	if(!match[2]) {
-		send(msg.chat.id, 'attack what?');
-		return;
-	}
+  if (!match[2]) {
+    send(msg.chat.id, 'attack what?');
+    return;
+  }
 
-	let opp = match[2].replace(' ', '');
-	// console.log(match);
-	
-	sendToRoom(msg, `⚔️ ${msg.from.username} attacks ${opp} for ${Math.ceil(Math.random() * 10)} damage! ⚔️`, true);
+  let opp = match[2].replace(' ', '');
+  // console.log(match);
+
+  sendToRoom(msg, `⚔️ ${msg.from.username} attacks ${opp} for ${Math.ceil(Math.random() * 10)} damage! ⚔️`, true);
 });
 
 bot.onText(/^\/(heal)(.*)*/, (msg, match) => {
-	if (!onlyStage(msg)) return;
+  if (!onlyStage(msg)) return;
 
-	if(!match[2]) {
-		send(msg.chat.id, 'attack what?');
-		return;
-	}
+  if (!match[2]) {
+    send(msg.chat.id, 'attack what?');
+    return;
+  }
 
-	let opp = match[2].replace(' ', '');
-	// console.log(match);
-	
-	sendToRoom(msg, `⚔️ ${msg.from.username} heals ${opp} for ${Math.ceil(Math.random() * 10)}hp! ⚔️`, true);
+  let opp = match[2].replace(' ', '');
+  // console.log(match);
+
+  sendToRoom(msg, `⚔️ ${msg.from.username} heals ${opp} for ${Math.ceil(Math.random() * 10)}hp! ⚔️`, true);
 });
 
 bot.onText(/^\/(take|pickup)(.*)*/, (msg, match) => {
-	if (!onlyStage(msg)) return;
+  if (!onlyStage(msg)) return;
 
-	if(!match[1]) {
-		send(msg.chat.id, 'pickup what?');
-		return;
-	}
+  if (!match[1]) {
+    send(msg.chat.id, 'pickup what?');
+    return;
+  }
 
-	let opp = match[2].replace(' ', '');
-	// console.log(match);
-	
-	sendToRoom(msg, `💁 ${msg.from.username} takes a ${opp}`, true);
+  let opp = match[2].replace(' ', '');
+  // console.log(match);
+
+  sendToRoom(msg, `💁 ${msg.from.username} takes a ${opp}`, true);
 });
 
 bot.onText(/^\/start/, (msg, match) => {
@@ -554,7 +573,7 @@ bot.onText(/^\/(players|people|whereami)/, (msg, match) => {
     .map((x) => x.name)
     .join(', ');
 
-  if(!rs) rs = 'empty room';
+  if (!rs) rs = 'empty room';
 
   const resp = `You are in ${room.title} with:\n${rs}`;
 
@@ -566,7 +585,7 @@ bot.onText(/^\/rooms/, (msg, match) => {
 
   const rs = roomMessageStr(msg);
 
-  const resp = `Click on a MetaRoom room below to join:\n\n${rs}`;
+  const resp = `Click on a MetaRoom room below to join:\n${rs}`;
 
   bot.sendMessage(chatId, resp, { attachments: [] });
 
@@ -578,7 +597,7 @@ bot.onText(/^\/rooms/, (msg, match) => {
 bot.onText(/^\/help/, (msg, match) => {
   const chatId = msg.chat.id;
 
-		const info = `
+  const info = `
 		To create subrooms in channels, pin a message to the group that contains the list in format of:
 
 		ROOMNAME MAX_USERS(number) MIXER(bool)
@@ -589,7 +608,7 @@ bot.onText(/^\/help/, (msg, match) => {
 
   bot.sendMessage(
     chatId,
-				`MetaRoom is a bot that turns Telegram Groups into chat rooms. MetaRoomBot will be your view/interface for these rooms.
+    `MetaRoom is a bot that turns Telegram Groups into chat rooms. MetaRoomBot will be your view/interface for these rooms.
 
 				Basic commands:
 					/start
@@ -615,14 +634,14 @@ bot.onText(/^\/help/, (msg, match) => {
 });
 
 bot.onText(/^\/inventory/, (msg, match) => {
-	const chatId = msg.chat.id;
+  const chatId = msg.chat.id;
 
-	bot.sendMessage(
-			chatId,
-			`
+  bot.sendMessage(
+    chatId,
+    `
 			Your inventory:
 
 			* 3x MetaRoom Token(s)
 			` // ${info}
-	);
+  );
 });
