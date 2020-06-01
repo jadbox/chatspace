@@ -74,7 +74,8 @@ const sendPoll = async (chatId, question, pollOptions, options) => {
 
 // Commands
 
-bot.onText(/\/echo (.+)/, (msg, match) => {
+bot.onText(/\/echo[\s]+(.+)/, (msg, match) => {
+  console.log('echo', msg);
   // console.log(msg.from.username);
   // 'msg' is the received Message from Telegram
   // 'match' is the result of executing the regexp above on the text content
@@ -339,7 +340,7 @@ async function introRoomMessage(msg, justLooking) {
   let pinnedMessage = '';
   if (!isHome) { //  && !justLooking
     const d = await bot.getChat(room.id);
-    // console.log('d.pinned_message', d.pinned_message)
+    console.log('d.pinned_message', d)
     if (d.pinned_message && d.pinned_message.text) pinnedMessage = `\n\n${d.pinned_message.text}`;
   }
   // --
@@ -371,20 +372,34 @@ bot.onText(/^\/join([_\s].*)*/, async (msg, match) => {
   // join anywhere
   rooms.add(msg.chat);
   // ---
-  // console.log(match);
+
   let targetRoom = msg.chat;
   if (match[1]) {
+    console.log('match', match);
     const r = match[1].replace('@MetaRoomBot', '');
-    targetRoom = { id: r.slice(1) };
+    targetRoom = r.slice(1);
     // console.log('targerRoom', targerRoom)
+    const troomUserName = '@' + targetRoom;
+    // console.log('troomUserName-', troomUserName, targetRoom);
     try {
-      targetRoom = await bot.getChat('@' + targetRoom.id);
-    } catch (e) {}
+      targetRoom = await bot.getChat(troomUserName);
+    } catch (e) {
+      console.log('getChat error:', e)
+    }
+
+    const userPermission = await bot.getChatMember(targetRoom.id, msg.from.id);
+    if((userPermission.is_member===false && userPermission.can_send_messages===false) || userPermission.status==='kicked') {
+      // console.log('userPermission', userPermission)
+      send(msg.chat.id, `Do not have permissions for: ${troomUserName}`);
+      return;
+    }
 
     if (!targetRoom) {
       console.log('no such room:' + targetRoom);
       return;
     }
+
+    
     // console.log('targerRoom', targetRoom);
   } else {
     if(msg.chat.type==='private') {
