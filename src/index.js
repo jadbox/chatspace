@@ -5,7 +5,7 @@ const { Game } = require('./rpg/game');
 const { Room, rooms } = require('./room');
 const TelegramBot = require('node-telegram-bot-api');
 
-const BOT_NAME = 'MetaStage';
+const BOT_NAME = 'MetaRoom';
 
 // replace the value below with the Telegram token you receive from @BotFather
 const token = process.env.TOKEN;
@@ -257,7 +257,7 @@ function onlyStage(msg) {
   if (msg.chat.type === 'private') return true;
 
   const chatId = msg.chat.id;
-  bot.sendMessage(chatId, `Can only run this command from direct MetaStage chat.`);
+  bot.sendMessage(chatId, `Can only run this command from direct MetaRoom chat.`);
 }
 
 // ===========
@@ -345,7 +345,7 @@ async function introRoomMessage(msg, justLooking) {
   // --
 		let jitsi = `* live: ${room.getVideoLink()}`;
 		//--
-		let game = roomName==='MetaStage Community'?`\n * items on ground:\n   - 2x RaidToken\n * bots:\n   - A Skeleton`:'';
+		let game = roomName==='MetaRoom Community'?`\n * items on ground:\n   - 2x RaidToken\n * bots:\n   - A Skeleton`:'';
 
   try {
     bot.sendMessage(
@@ -357,7 +357,7 @@ async function introRoomMessage(msg, justLooking) {
     );
   } catch (e) {
     console.log('error', e);
-    bot.sendMessage(room.id, 'Please talk with @MetaStageBot first');
+    bot.sendMessage(room.id, 'Please talk with @MetaRoomBot first');
   }
 }
 
@@ -374,7 +374,7 @@ bot.onText(/^\/join([_\s].*)*/, async (msg, match) => {
   // console.log(match);
   let targetRoom = msg.chat;
   if (match[1]) {
-    const r = match[1].replace('@MetaStageBot', '');
+    const r = match[1].replace('@MetaRoomBot', '');
     targetRoom = { id: r.slice(1) };
     // console.log('targerRoom', targerRoom)
     try {
@@ -420,7 +420,7 @@ bot.onText(/^\/join([_\s].*)*/, async (msg, match) => {
   try {
     if (!isPrivate(msg)) {
       bot.deleteMessage(chatId, msg.message_id);
-      bot.sendMessage(chatId, `${msg.from.username} joined room within @MetaStageBot`);
+      bot.sendMessage(chatId, `${msg.from.username} joined room within @MetaRoomBot`);
     }
   } catch (e) {}
 
@@ -524,7 +524,7 @@ bot.onText(/^\/start/, (msg, match) => {
 
   const rs = roomMessageStr(msg);
 
-  const resp = `Welcome to ${BOT_NAME}! Click on a MetaStage room below to join:\n\n${rs}\n\nType /help for commands`;
+  const resp = `Welcome to ${BOT_NAME}! Click on a MetaRoom room below to join:\n\n${rs}\n\nType /help for commands`;
 
   bot.sendMessage(chatId, resp, { attachments: [] });
 });
@@ -551,7 +551,7 @@ bot.onText(/^\/rooms/, (msg, match) => {
 
   const rs = roomMessageStr(msg);
 
-  const resp = `Click on a MetaStage room below to join:\n\n${rs}`;
+  const resp = `Click on a MetaRoom room below to join:\n\n${rs}`;
 
   bot.sendMessage(chatId, resp, { attachments: [] });
 
@@ -574,15 +574,15 @@ bot.onText(/^\/help/, (msg, match) => {
 
   bot.sendMessage(
     chatId,
-				`MetaStage is a bot that turns Telegram Groups into chat rooms. MetaStageBot will be your view/interface for these rooms.
+				`MetaRoom is a bot that turns Telegram Groups into chat rooms. MetaRoomBot will be your view/interface for these rooms.
 
 				Basic commands:
 					/start
 					/help
-					/rooms view all MetaStage chat rooms
+					/rooms view all MetaRoom chat rooms
 
 					Group commands:
-					/join - Set the current MetaStageBot context to this room (bot must be installed in channel)
+					/join - Set the current MetaRoomBot context to this room (bot must be installed in channel)
 					
           Stage commands:
           [any message] - all members in the stage will see
@@ -607,7 +607,7 @@ bot.onText(/^\/inventory/, (msg, match) => {
 			`
 			Your inventory:
 
-			* 3x MetaStage Token(s)
+			* 3x MetaRoom Token(s)
 			` // ${info}
 	);
 });

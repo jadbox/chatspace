@@ -30,7 +30,7 @@ function Room(info) {
 
 class Rooms {
   constructor() {
-    this.list = { '-1001428794592': Room({id:-1001428794592, title:'MetaStage Community', username: 'MetaStage', type: 'supergroup'}) };
+    this.list = { '-1001428794592': Room({id:-1001428794592, title:'MetaRoom Community', username: 'MetaRoom', type: 'supergroup'}) };
     this.players = {};
   }
   setPlayer(info, playerObj) {
